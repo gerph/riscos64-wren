@@ -8,7 +8,11 @@
 #include "wren.h"
 #include "wren_vm.h"
 
+#ifdef __riscos
+#include "wren_opt_random_wren_inc.c"
+#else
 #include "wren_opt_random.wren.inc"
+#endif
 
 // Implements the well equidistributed long-period linear PRNG (WELL512a).
 //

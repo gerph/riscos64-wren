@@ -5,7 +5,11 @@
 #include <string.h>
 
 #include "wren_vm.h"
+#ifdef __riscos
+#include "wren_opt_meta_wren_inc.c"
+#else
 #include "wren_opt_meta.wren.inc"
+#endif
 
 void metaCompile(WrenVM* vm)
 {

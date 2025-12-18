@@ -11,7 +11,11 @@
 #include "wren_primitive.h"
 #include "wren_value.h"
 
+#ifdef __riscos
+#include "wren_core_wren_inc.c"
+#else
 #include "wren_core.wren.inc"
+#endif
 
 DEF_PRIMITIVE(bool_not)
 {
