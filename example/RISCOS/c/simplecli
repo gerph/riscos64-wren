@@ -1,0 +1,159 @@
+//For more details, visit https://wren.io/embedding/
+
+#include <stdio.h>
+#include <string.h>
+#include "wren.h"
+
+static void writeFn(WrenVM * vm, const char *text)
+{
+    printf("%s", text);
+}
+
+void errorFn(WrenVM * vm, WrenErrorType errorType, const char *module, const int line, const char *msg)
+{
+    switch (errorType)
+    {
+        case WREN_ERROR_COMPILE:
+            {
+                printf("[%s line %d] [Error] %s\n", module, line, msg);
+            }
+            break;
+        case WREN_ERROR_STACK_TRACE:
+            {
+                printf("[%s line %d] in %s\n", module, line, msg);
+            }
+            break;
+        case WREN_ERROR_RUNTIME:
+            {
+                printf("[Runtime Error] %s\n", msg);
+            }
+            break;
+    }
+}
+
+
+// Reads the contents of the file at [path] and returns it as a heap allocated
+// string.
+//
+// Returns `NULL` if the path could not be found. Exits if it was found but
+// could not be read.
+static char *readFile(const char *path)
+{
+    FILE *file = fopen(path, "rb");
+    if (file == NULL)
+        return NULL;
+
+    // Find out how big the file is.
+    fseek(file, 0L, SEEK_END);
+    size_t fileSize = ftell(file);
+    rewind(file);
+
+    // Allocate a buffer for it.
+    char *buffer = (char *) malloc(fileSize + 1);
+    if (buffer == NULL)
+    {
+        fprintf(stderr, "Could not read file \"%s\".\n", path);
+        exit(74);
+    }
+
+    // Read the entire file.
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    if (bytesRead < fileSize)
+    {
+        fprintf(stderr, "Could not read file \"%s\".\n", path);
+        exit(74);
+    }
+
+    // Terminate the string.
+    buffer[bytesRead] = '\0';
+
+    fclose(file);
+    return buffer;
+}
+
+// The behavior of realloc() when the size is 0 is implementation defined. It
+// may return a non-NULL pointer which must not be dereferenced but nevertheless
+// should be freed. To prevent that, we avoid calling realloc() with a zero
+// size.
+static void* reallocateFn(void* ptr, size_t newSize, void* _)
+{
+    void *newptr;
+    if (newSize == 0)
+    {
+        free(ptr);
+        return NULL;
+    }
+
+    newptr = realloc(ptr, newSize);
+    if (newptr == NULL)
+    {
+        fprintf(stderr, "Out of memory\n");
+        abort();
+    }
+    return newptr;
+}
+
+
+int main(int argc, char *argv[])
+{
+
+    WrenConfiguration config;
+    wrenInitConfiguration(&config);
+    config.writeFn = &writeFn;
+    config.errorFn = &errorFn;
+    config.reallocateFn = &reallocateFn;
+    WrenVM *vm = wrenNewVM(&config);
+
+    const char *module;
+    const char *script;
+    const char *path;
+
+    WrenInterpretResult result;
+
+    if (argc < 2)
+    {
+        fprintf(stderr, "Syntax: Wren <file>\n");
+        exit(1);
+    }
+
+    path = argv[1];
+
+    script = readFile(path);
+    if (script == NULL)
+    {
+        fprintf(stderr, "Could not read file \"%s\".\n", path);
+        exit(74);
+    }
+
+    module = strrchr(path, '.');
+    if (module == NULL)
+    {
+        module = strrchr(path, ':');
+        if (module == NULL)
+            module = path;
+    }
+
+    result = wrenInterpret(vm, module, script);
+
+    switch (result)
+    {
+        case WREN_RESULT_COMPILE_ERROR:
+            {
+                printf("Compile Error!\n");
+            }
+            break;
+        case WREN_RESULT_RUNTIME_ERROR:
+            {
+                printf("Runtime Error!\n");
+            }
+            break;
+        case WREN_RESULT_SUCCESS:
+            {
+                printf("Success!\n");
+            }
+            break;
+    }
+
+    wrenFreeVM(vm);
+
+}
