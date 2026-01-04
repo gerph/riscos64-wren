@@ -104,6 +104,8 @@ int main(int argc, char *argv[])
     config.writeFn = &writeFn;
     config.errorFn = &errorFn;
     config.reallocateFn = &reallocateFn;
+    config.initialHeapSize = 240 * 1024;
+    config.minHeapSize = 160 * 1024;
     WrenVM *vm = wrenNewVM(&config);
 
     const char *module;
@@ -113,10 +115,10 @@ int main(int argc, char *argv[])
     WrenInterpretResult result;
 
     if (argc < 2 ||
-        strcmp(argv[1], '-h') == 0 ||
-        strcmp(argv[1], '--help') == 0)
+        strcmp(argv[1], "-h") == 0 ||
+        strcmp(argv[1], "--help") == 0)
     {
-        fprintf(stderr, "Wren (RISC OS: " Module_FullVersionAndDate ")\n");
+        fprintf(stderr, "Wren " WREN_VERSION_STRING " (RISC OS: " Module_FullVersionAndDate ")\n");
         fprintf(stderr, "Syntax: Wren <file>\n");
         if (argc < 2)
             exit(1);
