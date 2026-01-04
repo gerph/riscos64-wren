@@ -128,7 +128,11 @@ void wrenCollectGarbage(WrenVM* vm)
   printf("-- gc --\n");
 
   size_t before = vm->bytesAllocated;
+#ifdef __riscos
+  int32_t startTime = clock();
+#else
   double startTime = (double)clock() / CLOCKS_PER_SEC;
+#endif
 #endif
 
   // Mark all reachable objects.
@@ -198,6 +202,15 @@ void wrenCollectGarbage(WrenVM* vm)
   if (vm->nextGC < vm->config.minHeapSize) vm->nextGC = vm->config.minHeapSize;
 
 #if WREN_DEBUG_TRACE_MEMORY || WREN_DEBUG_TRACE_GC
+#ifdef __riscos
+  int32_t elapsed = clock() - startTime;
+  printf("GC %lu before, %lu after (%lu collected), next at %lu. Took %ics.\n",
+         (unsigned long)before,
+         (unsigned long)vm->bytesAllocated,
+         (unsigned long)(before - vm->bytesAllocated),
+         (unsigned long)vm->nextGC,
+         elapsed);
+#else
   double elapsed = ((double)clock() / CLOCKS_PER_SEC) - startTime;
   // Explicit cast because size_t has different sizes on 32-bit and 64-bit and
   // we need a consistent type for the format string.
@@ -207,6 +220,7 @@ void wrenCollectGarbage(WrenVM* vm)
          (unsigned long)(before - vm->bytesAllocated),
          (unsigned long)vm->nextGC,
          elapsed*1000.0);
+#endif
 #endif
 }
 

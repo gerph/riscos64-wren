@@ -4,6 +4,8 @@
 #include <string.h>
 #include "wren.h"
 
+#include "VersionNum"
+
 static void writeFn(WrenVM * vm, const char *text)
 {
     printf("%s", text);
@@ -102,6 +104,8 @@ int main(int argc, char *argv[])
     config.writeFn = &writeFn;
     config.errorFn = &errorFn;
     config.reallocateFn = &reallocateFn;
+    config.initialHeapSize = 240 * 1024;
+    config.minHeapSize = 160 * 1024;
     WrenVM *vm = wrenNewVM(&config);
 
     const char *module;
@@ -110,10 +114,16 @@ int main(int argc, char *argv[])
 
     WrenInterpretResult result;
 
-    if (argc < 2)
+    if (argc < 2 ||
+        strcmp(argv[1], "-h") == 0 ||
+        strcmp(argv[1], "--help") == 0)
     {
+        fprintf(stderr, "Wren " WREN_VERSION_STRING " (RISC OS: " Module_FullVersionAndDate ")\n");
         fprintf(stderr, "Syntax: Wren <file>\n");
-        exit(1);
+        if (argc < 2)
+            exit(1);
+        else
+            exit(0);
     }
 
     path = argv[1];
